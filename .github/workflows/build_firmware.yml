@@ -1,92 +1,64 @@
-name: Firmware build
+name: Build Firmware
 
+# Controls when the workflow will run
 on:
-  workflow_call:
-    inputs:
-      checkout-sha:
-        required: false
-        type: string
+  push:
+    branches: [ main ] # Runs on pushes to the main branch
+  pull_request:
+    branches: [ main ] # Runs on pull requests targeting the main branch
+  # workflow_dispatch: # Allows manual triggering from the Actions tab
 
 jobs:
-  build_fw_builder:
-    name: Build and push fw-builder Docker image
+  build_firmware:
+    name: Build Firmware (${{ matrix.device_type }})
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
-    outputs:
-      image_hash: ${{ steps.push.outputs.digest }}
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Check out the repo
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.checkout-sha == null && github.sha || inputs.checkout-sha }}
-          fetch-depth: 0
-      - name: ghcr.io login
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ghcr.io/${{ github.repository }}-fw-builder
-      - name: Build and push Docker images
-        id: push
-        uses: docker/build-push-action@v4
-        with:
-          context: firmware
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-  build_fw:
-    name: Build firmware
-    runs-on: ubuntu-latest
-    needs: build_fw_builder
+    
     strategy:
+      fail-fast: false # Keep running other matrix jobs even if one fails
       matrix:
-        device_type: [ultra, lite]
+        # Define the device types your project builds for. 
+        # Adjust or remove if your fork simplifies this.
+        device_type: [ultra, lite] 
+
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.checkout-sha == null && github.sha || inputs.checkout-sha }}
-          fetch-depth: 0
-      - name: Build firmware
+          fetch-depth: 0 # Fetch all history if build script needs it (e.g., for versioning)
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build fw-builder Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: firmware # <--- VERIFY: Path to the directory containing the Dockerfile
+          push: false # Don't push to registry, just build locally
+          load: true  # Load the image into the local Docker daemon
+          tags: local-fw-builder:latest # Tag for local use
+          cache-from: type=gha # Enable build cache from GitHub Actions cache
+          cache-to: type=gha,mode=max # Enable build cache saving to GitHub Actions cache
+
+      - name: Build firmware using Docker container
         env:
-          repo: ${{ github.repository }}
+           # Pass the device type from the matrix as an environment variable to the build script
+          CURRENT_DEVICE_TYPE: ${{ matrix.device_type }}
         run: |
-          docker run --rm -v ${PWD}:/workdir -e CURRENT_DEVICE_TYPE=${{ matrix.device_type }} ghcr.io/${repo,,}-fw-builder@${{ needs.build_fw_builder.outputs.image_hash }} firmware/build.sh
-      - name: Upload built binaries
-        uses: actions/upload-artifact@v3
+          echo "--- Building firmware for ${{ matrix.device_type }} ---"
+          # Mount current directory to /workdir in container and run the build script
+          # VERIFY: The mount point /workdir and the path to build.sh inside the container
+          docker run --rm \
+            -v "${PWD}":/workdir \
+            -e CURRENT_DEVICE_TYPE \
+            local-fw-builder:latest \
+            firmware/build.sh # <--- VERIFY: Path to the build script inside the repository/container
+
+      - name: Upload Firmware Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.device_type }}-firmware
-          path: firmware/objects/*.hex
-      - name: Unzip dfu images
-        run: |
-          sudo chown -R $USER:$USER firmware/objects
-          mkdir firmware/objects/${{ matrix.device_type }}-dfu-app
-          mkdir firmware/objects/${{ matrix.device_type }}-dfu-full
-          unzip firmware/objects/${{ matrix.device_type }}-dfu-app.zip -d firmware/objects/${{ matrix.device_type }}-dfu-app
-          unzip firmware/objects/${{ matrix.device_type }}-dfu-full.zip -d firmware/objects/${{ matrix.device_type }}-dfu-full
-      - name: Upload dfu app image
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.device_type }}-dfu-app
-          path: firmware/objects/${{ matrix.device_type }}-dfu-app/*
-      - name: Upload dfu full image
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ matrix.device_type }}-dfu-full
-          path: firmware/objects/${{ matrix.device_type }}-dfu-full/*
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-artifacts
-          path: firmware/objects/*.zip
+          name: ${{ matrix.device_type }}-firmware-artifacts # Artifact name includes device type
+          # VERIFY: The output path where build.sh places the artifacts
+          path: |
+            firmware/objects/*.hex 
+            firmware/objects/*.zip
+          retention-days: 7 # Optional: Keep artifacts for 7 days (default is 90)
