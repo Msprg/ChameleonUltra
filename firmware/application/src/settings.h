@@ -47,8 +47,8 @@ typedef struct ALIGN_U32 {
     // 6 byte
     uint8_t ble_connect_key[6];
 
-    // 1 byte
-    uint8_t long_press_duration; // Duration in ms for long press detection
+    // 2 bytes
+    uint16_t long_press_duration; // Duration in ms for long press detection
 
     // 1 byte
     uint8_t reserved1; // see bottom.

@@ -301,10 +301,10 @@ bool settings_get_ble_pairing_enable_first_load(void) {
     return m_ble_pairing_enable_first_load_value;
 }
 
-uint8_t settings_get_long_press_duration(void) {
+uint16_t settings_get_long_press_duration(void) {
     return config.long_press_duration;
 }
 
-void settings_set_long_press_duration(uint8_t duration) {
+void settings_set_long_press_duration(uint16_t duration) {
     config.long_press_duration = duration;
 }
