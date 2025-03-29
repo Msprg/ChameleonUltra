@@ -77,6 +77,6 @@ void settings_set_ble_connect_key(uint8_t *key);
 void settings_set_ble_pairing_enable(bool enable);
 bool settings_get_ble_pairing_enable(void);
 bool settings_get_ble_pairing_enable_first_load(void);
-uint8_t settings_get_long_press_duration(void);
-void settings_set_long_press_duration(uint8_t duration);
+uint16_t settings_get_long_press_duration(void);
+void settings_set_long_press_duration(uint16_t duration);
 #endif
