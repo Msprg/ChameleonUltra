@@ -306,5 +306,10 @@ uint16_t settings_get_long_press_duration(void) {
 }
 
 void settings_set_long_press_duration(uint16_t duration) {
+    // Enforce minimum value of 250ms to prevent accidental triggers
+    if (duration < 200) {
+        duration = 200;
+    }
+    // Maximum value is already enforced by uint16_t type (65535ms)
     config.long_press_duration = duration;
 }
