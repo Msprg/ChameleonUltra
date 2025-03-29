@@ -53,6 +53,11 @@ void settings_init_ble_pairing_enable_config(void) {
     config.ble_pairing_enable = false;
 }
 
+// add on version6
+void settings_init_long_press_duration_config(void) {
+    config.long_press_duration = 1000; // Default 1000ms
+}
+
 void settings_init_config(void) {
     settings_update_version_for_config();
     config.animation_config = SettingsAnimationModeFull; // add on version1
@@ -60,6 +65,7 @@ void settings_init_config(void) {
     settings_init_button_long_press_config();
     settings_init_ble_connect_key_config();
     settings_init_ble_pairing_enable_config();
+    settings_init_long_press_duration_config();
 }
 
 void settings_migrate(void) {
@@ -79,6 +85,9 @@ void settings_migrate(void) {
 
         case 4:
             settings_init_ble_pairing_enable_config();
+
+        case 5:
+            settings_init_long_press_duration_config();
 
             /*
              * Add new migration steps ABOVE THIS COMMENT
@@ -290,4 +299,12 @@ bool settings_get_ble_pairing_enable(void) {
 
 bool settings_get_ble_pairing_enable_first_load(void) {
     return m_ble_pairing_enable_first_load_value;
+}
+
+uint8_t settings_get_long_press_duration(void) {
+    return config.long_press_duration;
+}
+
+void settings_set_long_press_duration(uint8_t duration) {
+    config.long_press_duration = duration;
 }

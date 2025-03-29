@@ -5,7 +5,7 @@
 
 #include "utils.h"
 
-#define SETTINGS_CURRENT_VERSION 5
+#define SETTINGS_CURRENT_VERSION 6
 #define BLE_PAIRING_KEY_LEN 6
 #define DEFAULT_BLE_PAIRING_KEY "123456"  // length must == 6
 
@@ -48,6 +48,9 @@ typedef struct ALIGN_U32 {
     uint8_t ble_connect_key[6];
 
     // 1 byte
+    uint8_t long_press_duration; // Duration in ms for long press detection
+
+    // 1 byte
     uint8_t reserved1; // see bottom.
 
     /*
@@ -74,4 +77,6 @@ void settings_set_ble_connect_key(uint8_t *key);
 void settings_set_ble_pairing_enable(bool enable);
 bool settings_get_ble_pairing_enable(void);
 bool settings_get_ble_pairing_enable_first_load(void);
+uint8_t settings_get_long_press_duration(void);
+void settings_set_long_press_duration(uint8_t duration);
 #endif

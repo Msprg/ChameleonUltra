@@ -209,6 +209,19 @@ static data_frame_tx_t *cmd_processor_set_ble_pairing_enable(uint16_t cmd, uint1
     return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
 }
 
+static data_frame_tx_t *cmd_processor_get_long_press_duration(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    uint8_t duration = settings_get_long_press_duration();
+    return data_frame_make(cmd, STATUS_SUCCESS, 1, &duration);
+}
+
+static data_frame_tx_t *cmd_processor_set_long_press_duration(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
+    if (length != 1) {
+        return data_frame_make(cmd, STATUS_PAR_ERR, 0, NULL);
+    }
+    settings_set_long_press_duration(data[0]);
+    return data_frame_make(cmd, STATUS_SUCCESS, 0, NULL);
+}
+
 #if defined(PROJECT_CHAMELEON_ULTRA)
 
 static data_frame_tx_t *cmd_processor_hf14a_scan(uint16_t cmd, uint16_t status, uint16_t length, uint8_t *data) {
@@ -1278,6 +1291,8 @@ static cmd_data_map_t m_data_cmd_map[] = {
     {    DATA_CMD_GET_DEVICE_CAPABILITIES,      NULL,                        cmd_processor_get_device_capabilities,       NULL                   },
     {    DATA_CMD_GET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_get_ble_pairing_enable,        NULL                   },
     {    DATA_CMD_SET_BLE_PAIRING_ENABLE,       NULL,                        cmd_processor_set_ble_pairing_enable,        NULL                   },
+    {    DATA_CMD_GET_LONG_PRESS_DURATION,      NULL,                        cmd_processor_get_long_press_duration,       NULL                   },
+    {    DATA_CMD_SET_LONG_PRESS_DURATION,      NULL,                        cmd_processor_set_long_press_duration,       NULL                   },
 
 #if defined(PROJECT_CHAMELEON_ULTRA)
 
